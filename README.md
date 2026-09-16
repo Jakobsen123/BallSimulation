@@ -1,0 +1,1 @@
+clang++ main.cpp -o game $(pkg-config --cflags --libs raylib) -std=c++17
