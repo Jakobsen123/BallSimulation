@@ -4,6 +4,7 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
+                "/opt/homebrew/Cellar/raylib/6.0/include",
                 "C:/raylib/raylib/src"
             ],
             "defines": [],
