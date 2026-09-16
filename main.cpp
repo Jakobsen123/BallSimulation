@@ -1,9 +1,11 @@
 #include "raylib.h"
 #include <string>
 #include <vector>
-#include <ctime>
 #include <algorithm>
 #include <iostream>
+#include <cmath>
+
+Color BACKGROUND = Color{ 23, 23, 23 };
 
 class Circle
 {
@@ -29,6 +31,11 @@ public:
                 y = screenDimension.y - rad;
                 velocity.y *= -0.9f;
             }
+            if (y - rad <= 0) 
+            {
+                y = 0 + rad;
+                velocity.y *= -0.9f;
+            }
             if (x + rad >= screenDimension.x)
             {
                 x = screenDimension.x - rad;
@@ -41,9 +48,10 @@ public:
             }
         }
     }
-    void updVelocity(float v)
+    void updVelocity(Vector2 v)
     {
-        velocity.y *= v;
+        velocity.y *= v.y;
+        velocity.x *= v.x;
     }
     void stopVelocity()
     {
@@ -102,7 +110,7 @@ void spawnCircle(std::vector<Circle> &circleVec, const int x, const int y, const
 
 void DrawVectorSize(const std::vector<Circle> &vec, int x, int y)
 {
-    DrawText(TextFormat("%d", vec.size()), x, y, 50, BLACK);
+    DrawText(TextFormat("%d", vec.size()), x, y, 50, WHITE);
 }
 
 void resolveCollision(Circle &circle, Circle &otherCircle)
@@ -155,6 +163,16 @@ void clearVector(T &vec)
     vec.shrink_to_fit();
 }
 
+void calculateMouseVelocity(Vector2 &mv, Vector2 &lastmpos, const float dt) 
+{
+    Vector2 currentMousePos = GetMousePosition();
+    Vector2 mouseDir = {currentMousePos.x - lastmpos.x, currentMousePos.y - lastmpos.y};
+    Vector2 mouseV = {mouseDir.x / dt, mouseDir.y / dt};
+    std::cout << "DEBUG: MOUSEDIR: (" << mouseDir.x << ", " << mouseDir.y << ") " << "MOUSEV: (" << mouseV.x << ", " << mouseV.y << ")" << std::endl;
+    mv = mouseV;
+    lastmpos = GetMousePosition();
+}
+
 int main(void)
 {
     const int screenWidth = 960;
@@ -166,12 +184,17 @@ int main(void)
     float spawnCooldown = 0.0f;
     bool runSim = true;
 
+    Vector2 lastMousePos = GetMousePosition();
+    Vector2 mouseVelocity;
+
     InitWindow(screenWidth, screenHeight, "Spill");
-    SetTargetFPS(1000000);
+    SetTargetFPS(60);
     SetRandomSeed((unsigned int)time(NULL));
     while (!WindowShouldClose())
     {
+        
         float dt = GetFrameTime();
+        calculateMouseVelocity(mouseVelocity,lastMousePos,dt);
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mvobject == nullptr)
         {
             spawnCircle(objects, GetMouseX(), GetMouseY(), runSim);
@@ -227,6 +250,7 @@ int main(void)
         if (IsKeyReleased(KEY_E) && mvobject != nullptr)
         {
             mvobject->move = runSim ? true : false;
+            mvobject->setV(mouseVelocity);
             mvobject = nullptr;
         }
         if (mvobject != nullptr)
@@ -236,7 +260,7 @@ int main(void)
         }
 
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground(BACKGROUND);
         if (objects.size() == 2)
         {
             DrawLine(objects[0].getPos().x, objects[0].getPos().y, objects[1].getPos().x, objects[1].getPos().y, RED);
@@ -260,6 +284,7 @@ int main(void)
 
         DrawFPS(screenWidth - 150, 0 + 50);
         DrawVectorSize(objects, (screenWidth / 2) - 50, screenHeight - 50);
+        DrawText(TextFormat("%d",mouseVelocity),50,screenHeight - 50,20,WHITE);
         EndDrawing();
     }
     CloseWindow();

@@ -4,7 +4,7 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/opt/homebrew/opt/raylib/include"
+                "C:/raylib/raylib/src"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
