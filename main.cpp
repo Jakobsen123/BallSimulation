@@ -10,11 +10,12 @@ Color BACKGROUND = Color{ 23, 23, 23 };
 class Circle
 {
 public:
-    Circle(float varX, float varY, float varM)
+    Circle(float varX, float varY, float varM, float varRad)
     {
         x = varX;
         y = varY;
         m = varM;
+        rad = varRad;
     }
     bool move = true;
 
@@ -44,7 +45,7 @@ public:
             if (x - rad <= 0)
             {
                 x = 0 + rad;
-                velocity.x *= 0.9f;
+                velocity.x *= -0.9f;
             }
         }
     }
@@ -101,9 +102,9 @@ private:
     Color color = RED;
 };
 
-void spawnCircle(std::vector<Circle> &circleVec, const int x, const int y, const bool runSim)
+void spawnCircle(std::vector<Circle> &circleVec, const int x, const int y, const bool runSim, const float rad)
 {
-    Circle object(x, y, 15.0);
+    Circle object(x, y, rad, rad);
     object.move = runSim;
     circleVec.push_back(object);
 };
@@ -167,10 +168,18 @@ void calculateMouseVelocity(Vector2 &mv, Vector2 &lastmpos, const float dt)
 {
     Vector2 currentMousePos = GetMousePosition();
     Vector2 mouseDir = {currentMousePos.x - lastmpos.x, currentMousePos.y - lastmpos.y};
-    Vector2 mouseV = {mouseDir.x / dt, mouseDir.y / dt};
-    std::cout << "DEBUG: MOUSEDIR: (" << mouseDir.x << ", " << mouseDir.y << ") " << "MOUSEV: (" << mouseV.x << ", " << mouseV.y << ")" << std::endl;
-    mv = mouseV;
+    mv = {mouseDir.x / dt, mouseDir.y / dt};
     lastmpos = GetMousePosition();
+}
+
+void handleScroll(const float scroll, float &radVar) {    
+    if (scroll > 0.0f) {
+        if (radVar < 25) radVar += 1;
+    
+    } else if (scroll < 0.0f) {
+    
+        if (radVar > 5)  radVar -= 1; 
+    }
 }
 
 int main(void)
@@ -183,6 +192,7 @@ int main(void)
     Circle *mvobject = nullptr;
     float spawnCooldown = 0.0f;
     bool runSim = true;
+    float rad = 10;
 
     Vector2 lastMousePos = GetMousePosition();
     Vector2 mouseVelocity;
@@ -191,22 +201,26 @@ int main(void)
     SetTargetFPS(60);
     SetRandomSeed((unsigned int)time(NULL));
     while (!WindowShouldClose())
-    {
-        
+    {   
         float dt = GetFrameTime();
+        float scroll = GetMouseWheelMove();
+
         calculateMouseVelocity(mouseVelocity,lastMousePos,dt);
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mvobject == nullptr)
         {
-            spawnCircle(objects, GetMouseX(), GetMouseY(), runSim);
+            spawnCircle(objects, GetMouseX(), GetMouseY(), runSim, rad);
         }
         if (spawnCooldown > 0.0f)
         {
             spawnCooldown -= dt;
         }
+        if (scroll != 0.0f) {
+            handleScroll(scroll, rad);
+        }
 
         if (IsKeyDown(KEY_Q) && spawnCooldown <= 0.0f)
         {
-            spawnCircle(objects, GetMouseX(), GetMouseY(), runSim);
+            spawnCircle(objects, GetMouseX(), GetMouseY(), runSim, rad);
             spawnCooldown = 0.01f;
         }
         if (IsKeyDown(KEY_E))
@@ -281,10 +295,8 @@ int main(void)
             i.Update(dt, gravity, {screenWidth, screenHeight});
             i.Draw();
         }
-
         DrawFPS(screenWidth - 150, 0 + 50);
         DrawVectorSize(objects, (screenWidth / 2) - 50, screenHeight - 50);
-        DrawText(TextFormat("%d",mouseVelocity),50,screenHeight - 50,20,WHITE);
         EndDrawing();
     }
     CloseWindow();
