@@ -5,17 +5,18 @@
 #include <iostream>
 #include <cmath>
 
-Color BACKGROUND = Color{ 23, 23, 23 };
+Color BACKGROUND = Color{23, 23, 23};
 
 class Circle
 {
 public:
-    Circle(float varX, float varY, float varM, float varRad)
+    Circle(float varX, float varY, float varM, float varRad, float varRestitution)
     {
         x = varX;
         y = varY;
         m = varM;
         rad = varRad;
+        restitution = varRestitution;
     }
     bool move = true;
 
@@ -30,22 +31,22 @@ public:
             if (y + rad >= screenDimension.y)
             {
                 y = screenDimension.y - rad;
-                velocity.y *= -0.9f;
+                velocity.y *= -restitution;
             }
-            if (y - rad <= 0) 
+            if (y - rad <= 0)
             {
                 y = 0 + rad;
-                velocity.y *= -0.9f;
+                velocity.y *= -restitution;
             }
             if (x + rad >= screenDimension.x)
             {
                 x = screenDimension.x - rad;
-                velocity.x *= -0.9f;
+                velocity.x *= -restitution;
             }
             if (x - rad <= 0)
             {
                 x = 0 + rad;
-                velocity.x *= -0.9f;
+                velocity.x *= -restitution;
             }
         }
     }
@@ -99,12 +100,13 @@ private:
     float y = 50.0f;
     Vector2 velocity = {0.0f, 0.0f};
     float m = 15.0f;
+    float restitution = 0.9f;
     Color color = RED;
 };
 
-void spawnCircle(std::vector<Circle> &circleVec, const int x, const int y, const bool runSim, const float rad)
+void spawnCircle(std::vector<Circle> &circleVec, const int x, const int y, const bool runSim, const float rad, const float restitution)
 {
-    Circle object(x, y, rad, rad);
+    Circle object(x, y, rad, rad, restitution);
     object.move = runSim;
     circleVec.push_back(object);
 };
@@ -164,7 +166,7 @@ void clearVector(T &vec)
     vec.shrink_to_fit();
 }
 
-void calculateMouseVelocity(Vector2 &mv, Vector2 &lastmpos, const float dt) 
+void calculateMouseVelocity(Vector2 &mv, Vector2 &lastmpos, const float dt)
 {
     Vector2 currentMousePos = GetMousePosition();
     Vector2 mouseDir = {currentMousePos.x - lastmpos.x, currentMousePos.y - lastmpos.y};
@@ -172,13 +174,36 @@ void calculateMouseVelocity(Vector2 &mv, Vector2 &lastmpos, const float dt)
     lastmpos = GetMousePosition();
 }
 
-void handleScroll(const float scroll, float &radVar) {    
-    if (scroll > 0.0f) {
-        if (radVar < 25) radVar += 1;
-    
-    } else if (scroll < 0.0f) {
-    
-        if (radVar > 5)  radVar -= 1; 
+void handleScroll(const float scroll, float &radVar)
+{
+    if (scroll > 0.0f)
+    {
+        if (radVar < 25)
+            radVar += 1;
+    }
+    else if (scroll < 0.0f)
+    {
+
+        if (radVar > 5)
+            radVar -= 1;
+    }
+}
+
+void restitutionHandler(float &restitution, const bool increase)
+{
+    if (increase)
+    {
+        if (restitution <= 2.5)
+        {
+            restitution += 0.1f;
+        }
+    }
+    else
+    {
+        if (restitution >= 0.3)
+        {
+            restitution -= 0.1f;
+        }
     }
 }
 
@@ -186,41 +211,55 @@ int main(void)
 {
     const int screenWidth = 960;
     const int screenHeight = 560;
-    const float gravity = 500.0f;
+    const float gravity = 1500.0f;
+
+    const std::string andreas = "Fis";
 
     std::vector<Circle> objects;
     Circle *mvobject = nullptr;
     float spawnCooldown = 0.0f;
     bool runSim = true;
     float rad = 10;
+    float restitution = 0.9f;
 
     Vector2 lastMousePos = GetMousePosition();
     Vector2 mouseVelocity;
 
-    InitWindow(screenWidth, screenHeight, "Spill");
+    InitWindow(screenWidth, screenHeight, "Ball Simulation");
     SetTargetFPS(60);
     SetRandomSeed((unsigned int)time(NULL));
     while (!WindowShouldClose())
-    {   
+
+    {
         float dt = GetFrameTime();
         float scroll = GetMouseWheelMove();
 
-        calculateMouseVelocity(mouseVelocity,lastMousePos,dt);
+        calculateMouseVelocity(mouseVelocity, lastMousePos, dt);
+        if (IsKeyDown(KEY_UP))
+        {
+            restitutionHandler(restitution, true);
+        }
+        else if (IsKeyDown(KEY_DOWN))
+        {
+            restitutionHandler(restitution, false);
+        }
+
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mvobject == nullptr)
         {
-            spawnCircle(objects, GetMouseX(), GetMouseY(), runSim, rad);
+            spawnCircle(objects, GetMouseX(), GetMouseY(), runSim, rad, restitution);
         }
         if (spawnCooldown > 0.0f)
         {
             spawnCooldown -= dt;
         }
-        if (scroll != 0.0f) {
+        if (scroll != 0.0f)
+        {
             handleScroll(scroll, rad);
         }
 
         if (IsKeyDown(KEY_Q) && spawnCooldown <= 0.0f)
         {
-            spawnCircle(objects, GetMouseX(), GetMouseY(), runSim, rad);
+            spawnCircle(objects, GetMouseX(), GetMouseY(), runSim, rad, restitution);
             spawnCooldown = 0.01f;
         }
         if (IsKeyDown(KEY_E))
@@ -295,6 +334,8 @@ int main(void)
             i.Update(dt, gravity, {screenWidth, screenHeight});
             i.Draw();
         }
+        DrawText(TextFormat("Radius: %f", rad), 0 + 50, screenHeight - 30, 25, WHITE);
+        DrawText(TextFormat("Restitution: %f", restitution), 0 + 50, screenHeight - 50, 25, WHITE);
         DrawFPS(screenWidth - 150, 0 + 50);
         DrawVectorSize(objects, (screenWidth / 2) - 50, screenHeight - 50);
         EndDrawing();
