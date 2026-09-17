@@ -193,14 +193,14 @@ void restitutionHandler(float &restitution, const bool increase)
 {
     if (increase)
     {
-        if (restitution <= 2.5)
+        if (restitution <= 0.9)
         {
             restitution += 0.1f;
         }
     }
     else
     {
-        if (restitution >= 0.3)
+        if (restitution >= 0)
         {
             restitution -= 0.1f;
         }
@@ -310,6 +310,12 @@ int main(void)
         {
             mvobject->move = false;
             mvobject->updatePos(GetMousePosition());
+            if (IsKeyPressed(KEY_BACKSPACE))
+            {
+                std::erase_if(objects, [&](const Circle &c)
+                              { return &c == mvobject; });
+                mvobject = nullptr;
+            }
         }
 
         BeginDrawing();
